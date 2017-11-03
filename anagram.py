@@ -15,18 +15,15 @@ Returned list should be sorted
 
 """
 
+import sys
 from collections import Counter
 from operator import mul
 from functools import reduce
 from itertools import permutations
 
-from string import letters
+from string import ascii_lowercase
 from random import choice
 from time import time
-
-string = 'silent'
-words = {'listen', 'leesin', 'python', 'silen', 'enlist'}
-expect = ['enlist', 'listen']
 
 # Traditional solution
 # Sorts candidate string and target string to test for equality
@@ -92,26 +89,60 @@ def match_by_permutations_set(string, words):
     return sorted(words & perms)
 
 
-# temporary testing
-def test(got, expected):
+# solutions to be tested
+fns = (
+    match_by_sort,
+    match_by_counter,
+    match_by_perfect_hash,
+    match_by_permutations,
+    match_by_permutations_set
+)
+
+# simple test
+def test(fn):
+    passed = False
+    string_to_test = 'silent'
+    words_to_test = {'listen', 'leesin', 'python', 'silen', 'enlist'}
+    expected = ['enlist', 'listen']
+
+    got = fn(string_to_test, words_to_test)
     if got == expected:
         prefix = ' OK '
+        passed = True
     else:
         prefix = ' X '
-    print(f"{prefix} got: {got}, expected {expected}")
 
+    return passed, f"{fn.__name__}", f"{prefix} got: {got}, expected: {expected}"
+
+
+# timing test
+small = 4
+string_size = small
+words_size = 100_0000
+population = ascii_lowercase[: string_size+2]
+words_to_time = set()
+for i in range(words_size):
+    word = ''.join([choice(population) for i in range(string_size)])
+    words_to_time.add(word)
+# arbitrarily search takes last word to be the target string for testing
+string_to_time = word
 
 def main():
-    print("anagram match_by_sort")
-    test(match_by_sort(string, words), expect)
-    print("anagram match_by_counter")
-    test(match_by_counter(string, words), expect)
-    print("anagram match_by_perfect_hash")
-    test(match_by_perfect_hash(string, words), expect)
-    print("anagram match_by_permutations")
-    test(match_by_permutations(string, words), expect)
-    print("anagram match_by_permutations_set")
-    test(match_by_permutations_set(string, words), expect)
+    print('Anagram Match\n')
+    print('Simple test assert equal')
+    for fn in fns:
+        passed, fname, message = test(fn)
+        if passed:
+            print(fname, message)
+        else:
+            sys.exit(1)
+
+    print(f"\nTiming with string_size={string_size} and words_size={words_size}")
+    for fn in fns:
+        start = time()
+        fn(string_to_time, words_to_time)
+        end = time()
+        print("{}\t{}".format((end - start), fn.__name__))
 
 
 if __name__ == '__main__':

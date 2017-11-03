@@ -83,22 +83,12 @@ def match_by_permutations(string, words):
     perms = set(map(''.join, permutations(string)))
     return sorted(word for word in words if word in perms)
 
-
 def match_by_permutations_set(string, words):
     perms = set(map(''.join, permutations(string)))
     return sorted(words & perms)
 
 
-# solutions to be tested
-fns = (
-    match_by_sort,
-    match_by_counter,
-    match_by_perfect_hash,
-    match_by_permutations,
-    match_by_permutations_set
-)
-
-# simple test
+# Simple test
 def test(fn):
     passed = False
     string_to_test = 'silent'
@@ -115,20 +105,29 @@ def test(fn):
     return passed, f"{fn.__name__}", f"{prefix} got: {got}, expected: {expected}"
 
 
-# timing test
-small = 4
-string_size = small
+# Timing test
+string_size = 5    # enlarge this to analyze solutions
 words_size = 100_0000
 population = ascii_lowercase[: string_size+2]
 words_to_time = set()
 for i in range(words_size):
     word = ''.join([choice(population) for i in range(string_size)])
     words_to_time.add(word)
-# arbitrarily search takes last word to be the target string for testing
+# Arbitrarily search takes last word to be the target string for testing
 string_to_time = word
 
 def main():
     print('Anagram Match\n')
+
+    # Solutions to be tested
+    fns = (
+        match_by_sort,
+        match_by_counter,
+        match_by_perfect_hash,
+        match_by_permutations,
+        match_by_permutations_set
+    )
+
     print('Simple test assert equal')
     for fn in fns:
         passed, fname, message = test(fn)

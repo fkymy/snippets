@@ -1,4 +1,5 @@
 # calculate palindromic length from center with incresmenting difference
+
 def palindromic_length( center, diff, string):
     if center-diff == -1 or center+diff == len(string) or string[center-diff] != string[center+diff] :
         return 0
@@ -12,10 +13,10 @@ def palindromic_string( input_string ):
     2. for each character in new_string it find corresponding length and store,
         a. max_length
         b. max_length's center
-    3. return output_string from center - max_length to center + max_length and remove all "|"   
+    3. return output_string from center - max_length to center + max_length and remove all "|"
     """
     max_length = 0
-    
+
     # if input_string is "aba" than new_input_string become "a|b|a"
     new_input_string = ""
     output_string = ""
@@ -37,12 +38,12 @@ def palindromic_string( input_string ):
         if max_length < length :
             max_length = length
             start = i
-    
+
     #create that string
     for i in new_input_string[start-max_length:start+max_length+1] :
         if i != "|":
             output_string += i
-    
+
     return output_string
 
 

@@ -6,15 +6,6 @@ def palindromic_length( center, diff, string):
     return 1 + palindromic_length(center, diff+1, string)
 
 def palindromic_string( input_string ):
-    """
-    Manacher’s algorithm which finds Longest Palindromic Substring in linear time.
-    1. first this conver input_string("xyx") into new_string("x|y|x") where odd positions are actual input
-        characters.
-    2. for each character in new_string it find corresponding length and store,
-        a. max_length
-        b. max_length's center
-    3. return output_string from center - max_length to center + max_length and remove all "|"
-    """
     max_length = 0
 
     # if input_string is "aba" than new_input_string become "a|b|a"

@@ -1,20 +1,25 @@
-void	shell_sort(int v[], int n)
+#include <stdio.h>
+
+void	shell_sort(int arr[], int n)
 {
-	int gap;
-	int i;
-	int j;
+	int h;
 	int tmp;
 
-	for (gap = n / 2; gap > 0; gap /= 2)
+	h = 1;
+	while (h < n / 3)
+		h = 3 * h + 1; // knuth's increment sequence
+	while (h > 0)
 	{
-		for (i = gap; i < n; i++)
+		// h-sort the array
+		for (int i = h; i < n; i++)
 		{
-			for (j = i - gap; j >= 0 && v[j] > v[j + gap]; j -= gap)
+			for (int j = i - h; j >= 0 && arr[j] > arr[j + h]; j -= h)
 			{
-				tmp = v[j];
-				v[j] = v[j + gap];
-				v[j + gap] = tmp;
+				tmp = arr[j];
+				arr[j] = arr[j + h];
+				arr[j + h] = tmp;
 			}
 		}
+		h = h / 3;
 	}
 }

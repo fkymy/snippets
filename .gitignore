@@ -1,0 +1,4 @@
+study/
+.DS_Store
+*.o
+a.out

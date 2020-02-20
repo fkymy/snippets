@@ -35,6 +35,24 @@ void	quick_sort(int arr[], int start, int end)
 	}
 }
 
+void	quick_sort_optimize_space(int arr[], int start, int end)
+{
+	while (start < end)
+	{
+		int pindex = partition(arr, start, end);
+		if (pindex - start < end - pindex)
+		{
+			quick_sort_optimize_space(arr, low, pindex - 1);
+			start = pindex + 1;
+		}
+		else
+		{
+			quick_sort_optimize_space(arr, pindex + 1, end);
+			end = pindex - 1;
+		}
+	}
+}
+
 void	print_array(int arr[], int n)
 {
 	for (int i = 0; i < n; i++)

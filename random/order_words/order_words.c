@@ -1,8 +1,9 @@
 // Order Words
-// Create a program that lists words that appear in a string given by its length, alphabetically (unless aA, then order or appearance)
+// Create a program that lists words that appear in a string given by its length, alphabetically (unless aA, then order of appearance)
 // e.g. ./order_alpha "stay awhile you are so beautiful You aaa" | cat -e
 // so$
-// aaa are you You$ stay$
+// aaa are you You$
+// stay$
 // awhile$
 // beautiful$
 

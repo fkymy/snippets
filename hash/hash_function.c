@@ -1,4 +1,4 @@
-#include "hash.h"
+#include "hash_function.h"
 
 // treat strings as base-256 integers
 // with digits in the range 1 to 255

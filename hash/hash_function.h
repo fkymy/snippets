@@ -1,5 +1,5 @@
-#ifndef HASH_H
-# define HASH_H
+#ifndef HASH_FUNCTION_H
+# define HASH_FUNCTION_H
 
 #define BASE (256)
 #define MULTIPLIER (37)

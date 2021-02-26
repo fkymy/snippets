@@ -1,3 +1,7 @@
+/**
+ * A simple buildstring vector
+ */
+
 #include <stdlib.h>
 #include <string.h>
 

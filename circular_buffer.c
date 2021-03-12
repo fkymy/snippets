@@ -61,8 +61,6 @@ ssize_t bbuffer_read(struct bbuffer *b, char *buf, size_t size)
 	pthread_mutex_lock(&b->lock);
 	while (b->len == 0 && !b->write_closed)
 		pthread_cond_wait(&b->nonempty, &b->lock);
-	if (b->write_closed)
-		printf("write closed!\n");
 	size_t pos = 0;
 	while (pos < size && b->len > 0) {
 		buf[pos] = b->buf[b->pos];
@@ -81,7 +79,6 @@ ssize_t bbuffer_read(struct bbuffer *b, char *buf, size_t size)
 	}
 }
 
-// make these atomic
 size_t nwrites;
 size_t nreads;
 

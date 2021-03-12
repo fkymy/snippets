@@ -39,20 +39,20 @@ ssize_t bbuffer_write(struct bbuffer *b, const char *buf, size_t size)
 	assert(!b->write_closed);
 	while (b->len == b->capacity)
 		pthread_cond_wait(&b->nonfull, &b->lock);
-	size_t pos = 0;
-	while (pos < size && b->len < b->capacity) {
+	size_t n = 0;
+	while (n < size && b->len < b->capacity) {
 		size_t bindex = (b->pos + b->len) % b->capacity;
-		b->buf[bindex] = buf[pos];
+		b->buf[bindex] = buf[n];
 		b->len++;
-		pos++;
+		n++;
 	}
-	if (pos > 0)
+	if (n > 0)
 		pthread_cond_broadcast(&b->nonempty);
 	pthread_mutex_unlock(&b->lock);
-	if (pos == 0 && size > 0) {
+	if (n == 0 && size > 0) {
 		return -1; /* try again */
 	} else {
-		return pos;
+		return n;
 	}
 }
 
@@ -61,21 +61,20 @@ ssize_t bbuffer_read(struct bbuffer *b, char *buf, size_t size)
 	pthread_mutex_lock(&b->lock);
 	while (b->len == 0 && !b->write_closed)
 		pthread_cond_wait(&b->nonempty, &b->lock);
-	size_t pos = 0;
-	while (pos < size && b->len > 0) {
-		buf[pos] = b->buf[b->pos];
+	size_t n = 0;
+	while (n < size && b->len > 0) {
+		buf[n] = b->buf[b->pos];
 		b->pos = (b->pos + 1) % b->capacity;
 		b->len--;
-		pos++;
+		n++;
 	}
-	printf("pos: %zu\n", pos);
-	if (pos > 0)
+	if (n > 0)
 		pthread_cond_broadcast(&b->nonfull);
 	pthread_mutex_unlock(&b->lock);
-	if (pos == 0 && size > 0 && !b->write_closed) {
+	if (n == 0 && size > 0 && !b->write_closed) {
 		return -1; /* try again */
 	} else {
-		return pos;
+		return n;
 	}
 }
 

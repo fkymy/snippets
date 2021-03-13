@@ -70,12 +70,11 @@ ssize_t bbuffer_read(struct bbuffer *b, char *buf, size_t size)
 	}
 	if (n > 0)
 		pthread_cond_broadcast(&b->nonfull);
-	pthread_mutex_unlock(&b->lock);
 	if (n == 0 && size > 0 && !b->write_closed) {
 		return -1; /* try again */
-	} else {
-		return n;
 	}
+	pthread_mutex_unlock(&b->lock);
+	return n;
 }
 
 size_t nwrites;

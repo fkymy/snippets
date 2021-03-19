@@ -5,11 +5,7 @@
 #include <string.h>
 #include <pthread.h>
 
-#define BUFFER_SIZE 64
-#define min(a,b) ({\
-		__typeof__ (a) _a = (a); \
-		__typeof__ (b) _b = (b); \
-		_a < _b ? _a : _b; })
+#define BUFFER_SIZE 8
 
 struct bbuffer {
 	char buf[BUFFER_SIZE];
@@ -85,6 +81,7 @@ int main()
 	struct bbuffer b = { 0 };
 	pthread_t t1, t2;
 
+	pthread_mutex_init(&write_lock, NULL);
 	b.capacity = BUFFER_SIZE;
 	pthread_mutex_init(&b.lock, NULL);
 	pthread_cond_init(&b.nonfull, NULL);
@@ -100,16 +97,17 @@ int main()
 /* Writer thread function */
 void thread_A(struct bbuffer *b)
 {
-	const char msg[] = "Hello world!\n";
+	const char msg[] = "Hello world!";
 	const size_t msg_len = strlen(msg);
-	for (int i = 0; i < 1000000; i++) {
+	for (int i = 0; i < 1000000; i++)
+	{
 		size_t pos = 0;
-		while (pos < msg_len) {
+		while (pos < msg_len)
+		{
 			ssize_t nw = bbuffer_write(b, &msg[pos], msg_len - pos);
 			++nwrites;
-			if (nw > -1) {
+			if (nw > -1)
 				pos += nw;
-			}
 		}
 	}
 	bbuffer_close_write(b);
@@ -120,10 +118,10 @@ void thread_B(struct bbuffer *b)
 {
 	char buf[BUFFER_SIZE];
 	ssize_t nr;
-	while ((nr = bbuffer_read(b, buf, sizeof(buf))) != 0) {
+	while ((nr = bbuffer_read(b, buf, sizeof(buf))) != 0)
+	{
 		nreads++;
-		if (nr > -1) {
+		if (nr > -1)
 			write(1, buf, nr);
-		}
 	}
 }

@@ -21,8 +21,7 @@ static const unsigned int kHighProcessTimeMS = 120;
 static const unsigned int kLowPrepareTimeMS = 10;
 static const unsigned int kHighPrepareTimeMS = 100;
 
-// shared random generator return a random value
-// between low and high to sleep for (in milliseconds).
+// Shared random time generator (in milliseconds) to simulate data processing
 pthread_mutex_t rand_lock;
 
 static int get_rand(unsigned int low, unsigned int high)

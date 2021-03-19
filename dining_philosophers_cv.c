@@ -19,6 +19,32 @@ static const int kNumPhilosophers = 5;
 static const int kNumForks = kNumPhilosophers;
 static const int kNumMeals = 3;
 
+static const unsigned int kLowThinkTime = 100;
+static const unsigned int kHighThinkTime = 2000;
+static const unsigned int kLowEatTime = 25;
+static const unsigned int kHighEatTime = 50;
+pthread_mutex_t rand_lock;
+
+static unsigned int get_rand(unsigned int low, unsigned int high)
+{
+	unsigned int num;
+
+	pthread_mutex_lock(&rand_lock);
+	num = (rand() % (high - low + 1)) + low;
+	pthread_mutex_unlock(&rand_lock);
+	return num;
+}
+
+static unsigned int get_think_time()
+{
+	return get_rand(kLowThinkTime, kHighThinkTime) * 1000;
+}
+
+static unsigned int get_eat_time()
+{
+	return get_rand(kLowEatTime, kHighEatTime) * 1000;
+}
+
 static void wait_for_permission(int *permits, pthread_cond_t *cv, pthread_mutex_t *m)
 {
 	pthread_mutex_lock(m);
@@ -40,7 +66,7 @@ static void grant_permission(int *permits, pthread_cond_t *cv, pthread_mutex_t *
 static void think(int id)
 {
 	printf("%d is thinking\n", id);
-	sleep(1);
+	usleep(get_think_time());
 }
 
 static void eat(int id, pthread_mutex_t *left, pthread_mutex_t *right, int *permits, pthread_cond_t *cv, pthread_mutex_t *m)
@@ -49,7 +75,7 @@ static void eat(int id, pthread_mutex_t *left, pthread_mutex_t *right, int *perm
 	pthread_mutex_lock(left);
 	pthread_mutex_lock(right);
 	printf("%d is eating\n", id);
-	sleep(1);
+	usleep(get_eat_time());
 	grant_permission(permits, cv, m);
 	pthread_mutex_unlock(left);
 	pthread_mutex_unlock(right);
@@ -69,6 +95,9 @@ static void *philosopher(void *arg)
 
 int main(int argc, char *argv[])
 {
+	srand(time(0));
+	pthread_mutex_init(&rand_lock, NULL);
+
 	pthread_mutex_t forks[kNumPhilosophers], m;
 	pthread_cond_t cv;
 	pthread_t philosophers[kNumPhilosophers];

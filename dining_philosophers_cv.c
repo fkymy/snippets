@@ -96,10 +96,12 @@ static void *philosopher(void *arg)
 
 int main(int argc, char *argv[])
 {
-	pthread_mutex_t forks[kNumPhilosophers], m;
+	pthread_mutex_t forks[kNumPhilosophers];
 	pthread_t philosophers[kNumPhilosophers];
 	struct threadinfo ti[kNumPhilosophers];
+
 	pthread_cond_t cv;
+	pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 
 	int permits = kNumPhilosophers - 1;
 

@@ -22,7 +22,8 @@ static const unsigned int kLowThinkTime = 100;
 static const unsigned int kHighThinkTime = 2000;
 static const unsigned int kLowEatTime = 25;
 static const unsigned int kHighEatTime = 50;
-pthread_mutex_t rand_lock;
+
+pthread_mutex_t rand_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static unsigned int get_rand(unsigned int low, unsigned int high)
 {
@@ -75,9 +76,6 @@ static void *philosopher(void *arg) {
 
 int main(int argc, char *argv[])
 {
-	srand(time(0));
-	pthread_mutex_init(&rand_lock, NULL);
-
 	pthread_mutex_t forks[kNumPhilosophers];
 	pthread_t philosophers[kNumPhilosophers];
 	struct threadinfo ti[kNumPhilosophers];
@@ -85,6 +83,8 @@ int main(int argc, char *argv[])
 
 	permits = sem_open("/permits", O_CREAT|O_EXCL, S_IRWXU, kNumPhilosophers - 1);
 	sem_unlink("/permits");
+
+	srand(time(0));
 
 	for (int i = 0; i < kNumPhilosophers; i++)
 	{

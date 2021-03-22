@@ -21,9 +21,10 @@ static const unsigned int kHighProcessTimeMS = 120;
 static const unsigned int kLowPrepareTimeMS = 10;
 static const unsigned int kHighPrepareTimeMS = 100;
 
-// Shared random time generator (in milliseconds) to simulate data processing
+pthread_mutex_t write_lock;
 pthread_mutex_t rand_lock;
 
+// Shared random time generator (in milliseconds) to simulate data processing
 static int get_rand(unsigned int low, unsigned int high)
 {
 	int num;
@@ -63,7 +64,6 @@ struct threadinfo {
 	sem_t *empty;
 	size_t size;
 	size_t iterations;
-	pthread_mutex_t *write_lock;
 };
 
 void *write_to_buffer(void *arg)
@@ -82,10 +82,10 @@ void *write_to_buffer(void *arg)
 		// signal that there is content to read
 		sem_post(tip->full);
 
-		pthread_mutex_lock(tip->write_lock);
+		pthread_mutex_lock(&write_lock);
 		printf("Writer: published data packet with character '%c'.\t\t", ch);
 		print_buffer(tip->buffer, tip->size);
-		pthread_mutex_unlock(tip->write_lock);
+		pthread_mutex_unlock(&write_lock);
 	}
 	return NULL;
 }
@@ -108,10 +108,10 @@ void *read_from_buffer(void *arg)
 		// signal that there is space to write more content
 		sem_post(tip->empty);
 
-		pthread_mutex_lock(tip->write_lock);
+		pthread_mutex_lock(&write_lock);
 		printf("Reader: consumed data packed with character '%c'.\t\t", ch);
 		print_buffer(tip->buffer, tip->size);
-		pthread_mutex_unlock(tip->write_lock);
+		pthread_mutex_unlock(&write_lock);
 	}
 	return NULL;
 }
@@ -124,7 +124,6 @@ int main(void)
 	srand(time(0));
 	pthread_mutex_init(&rand_lock, NULL);
 
-	pthread_mutex_t write_lock;
 	pthread_mutex_init(&write_lock, NULL);
 
 	sem_t *full = sem_open("/full", O_CREAT|O_EXCL, S_IRWXU, 0);
@@ -141,7 +140,6 @@ int main(void)
 	ti.empty = empty;
 	ti.size = sizeof(buffer);
 	ti.iterations = kNumIterations;
-	ti.write_lock = &write_lock;
 	pthread_create(&writer_thread, NULL, write_to_buffer, &ti);
 	pthread_create(&reader_thread, NULL, read_from_buffer, &ti);
 

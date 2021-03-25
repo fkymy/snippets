@@ -9,7 +9,7 @@
 #define OP_PIPE 2
 #define OP_SEQUENTIAL 3
 
-int exit_status;
+extern char **environ;
 
 void report(const char *fmt, va_list params)
 {
@@ -23,7 +23,7 @@ void die(const char *fmt, ...)
 	va_start(params, fmt);
 	report(fmt, params);
 	va_end(params);
-	exit(exit_status);
+	exit(1);
 }
 
 typedef struct command command;
@@ -32,11 +32,11 @@ struct command
 	struct command *next;
 	int argc;
 	char **argv;
-	int op;
+	int ispipe;
 	pid_t pid;
 };
 
-static command *command_alloc()
+command *command_alloc()
 {
 	struct command *c;
 
@@ -46,25 +46,25 @@ static command *command_alloc()
 	c->next = NULL;
 	c->argc = 0;
 	c->argv = NULL;
-	c->op = 0;
+	c->ispipe = 0;
 	c->pid = -1;
 	return c;
 }
 
-static void command_append_arg(command *c, char *word) {
-    c->argv = (char**)realloc(c->argv, sizeof(char*) * (c->argc + 2));
-    c->argv[c->argc] = word;
-    c->argv[c->argc + 1] = NULL;
-    c->argc++;
+void command_append_arg(command *c, char *word) {
+	c->argv = (char**)realloc(c->argv, sizeof(char*) * (c->argc + 2));
+	c->argv[c->argc] = word;
+	c->argv[c->argc + 1] = NULL;
+	c->argc++;
 }
 
-static void command_free(command *c)
+void command_free(command *c)
 {
     free(c->argv);
     free(c);
 }
 
-static void command_clear(command **c)
+void command_clear(command **c)
 {
 	command *tmp;
 
@@ -78,47 +78,58 @@ static void command_clear(command **c)
 	}
 }
 
-static pid_t start_command(char *arg[], int ispipe, int haspipe, int lastpipe[2])
+pid_t start_command(char *argv[], int ispipe, int haspipe, int lastpipe[2])
 {
 	pid_t pid;
 	int newpipe[2];
 
-	// if pipe, pipe
-	// fork
-	// execute command
-	// cleanup pipe
-	// setup next pipe
-
 	if (ispipe)
-		pipe(newpipe);
-	pid = fork();
-	if (pid < 0)
-		die("failed to fork: %s\n", strerror(errno));
-	else if (pid == 0)
 	{
-		// child
-
+		int r = pipe(newpipe);
+		assert(r == 0);
 	}
-	// parent
-
+	pid = fork();
+	if (pid == 0)
+	{
+		if (haspipe)
+		{
+			close(lastpipe[1]);
+			dup2(lastpipe[0], 0);
+			close(lastpipe[0]);
+		}
+		if (ispipe)
+		{
+			close(newpipe[0]);
+			dup2(newpipe[1], 1);
+			close(newpipe[1]);
+		}
+		execve(argv[0], argv, environ);
+		_exit(1);
+	}
+	if (haspipe)
+	{
+		close(lastpipe[0]);
+		close(lastpipe[1]);
+	}
+	if (ispipe)
+	{
+		lastpipe[0] = newpipe[0];
+		lastpipe[1] = newpipe[1];
+	}
 	return pid;
 }
 
-static command *do_pipeline(command *c)
+command *do_pipeline(command *c)
 {
-	int ispipe;
-	int haspipe;
-	int lastpipe[2];
+	int haspipe = 0;
+	int lastpipe[2] = { -1, -1 };
 
-	ispipe = 0;
-	haspipe = 0;
-	lastpipe[0] = -1;
-	lastpipe[1] = -1;
 	while (c)
 	{
-		ispipe = (c->op == OP_PIPE);
-		c->pid = start_command(c->argv, ispipe, haspipe, lastpipe);
-		haspipe = ispipe;
+		c->pid = start_command(c->argv, c->ispipe, haspipe, lastpipe);
+		if (c->pid == -1)
+			break ;
+		haspipe = c->ispipe;
 		if (haspipe && c->next)
 			c = c->next;
 		else if (haspipe && !c->next)
@@ -126,31 +137,21 @@ static command *do_pipeline(command *c)
 		else
 			break ;
 	}
-	return NULL;
+	return c;
 }
 
 void run_list(command *c)
 {
 	pid_t pid;
-	int status;
 
 	while (c)
 	{
-		for (int i = 0; i < c->argc; i++)
-			printf("argv: %s\n", c->argv[i]);
-
-		// Check for builtin
-
-		// Do pipeline
 		c = do_pipeline(c);
-
-		// Wait pipeline
-		pid = waitpid(c->pid, &status, 0);
-		assert(pid == c->pid);
-		if (WIFEXITED(status))
-			exit_status = WEXITSTATUS(status);
-		else
-			die("child %d exited abnormally", pid);
+		if (c->pid != -1)
+		{
+			pid = waitpid(c->pid, NULL, 0);
+			assert(pid == c->pid);
+		}
 
 		// Reap zombie processes
 		while (wait(NULL) > 0);
@@ -163,7 +164,6 @@ int main(int argc, char *argv[])
 {
 	command *c;
 
-	// Command allocation
 	c = command_alloc();
 	if (!c)
 		return 1;
@@ -172,12 +172,9 @@ int main(int argc, char *argv[])
 	for (int i = 1; i < argc; i++)
 		command_append_arg(c, argv[i]);
 
-	// Run list
 	if (c->argc)
 		run_list(c);
 
-	// Command clear
 	command_clear(&c);
-	return exit_status;
+	return 0;
 }
-

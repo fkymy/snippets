@@ -6,45 +6,16 @@
 #include <errno.h>
 #include <string.h>
 
-#define TOKEN_WORD 0
-#define TOKEN_REDIRECTION 1
-#define TOKEN_PIPE 2
-#define TOKEN_AND 3
-#define TOKEN_OR 4
-#define TOKEN_SEPARATOR 5
-#define TOKEN_OTHER -1
-
-#define OP_PIPE 2
-#define OP_AND 3
-#define OP_OR 4
-#define OP_SEPARATOR 5
-#define OP_OTHER -1
-
 extern char **environ;
-
-void report(const char *fmt, va_list params)
-{
-	vfprintf(stderr, fmt, params);
-}
-
-void die(const char *fmt, ...)
-{
-	va_list params;
-
-	va_start(params, fmt);
-	report(fmt, params);
-	va_end(params);
-	exit(1);
-}
 
 typedef struct command command;
 struct command
 {
 	struct command *next;
-	int argc;
-	char **argv;
-	int op;
-	pid_t pid;
+	int argc;    // number of arguments
+	char **argv; // arguments, terminated by NULL
+	int op;      // operator following this command: "|" or ";"
+	pid_t pid;   // process ID running this command, -1 if none
 };
 
 command *command_alloc()
@@ -87,6 +58,21 @@ void command_clear(command **c)
 		command_free(*c);
 		*c = tmp;
 	}
+}
+
+void report(const char *fmt, va_list params)
+{
+	vfprintf(stderr, fmt, params);
+}
+
+void die(const char *fmt, ...)
+{
+	va_list params;
+
+	va_start(params, fmt);
+	report(fmt, params);
+	va_end(params);
+	exit(1);
 }
 
 pid_t start_command(char *argv[], int ispipe, int haspipe, int lastpipe[2])
@@ -160,6 +146,8 @@ void run_list(command *c)
 	while (c)
 	{
 		c = do_pipeline(c);
+
+		// Only wait for the last command in pipeline
 		if (c->pid != -1)
 		{
 			pid = waitpid(c->pid, NULL, 0);
@@ -204,10 +192,12 @@ int main(int argc, char *argv[])
 {
 	command *c;
 
+	// New head for command list
 	c = command_alloc();
 	if (!c)
 		return 1;
 
+	// Make list with operators "|" and ";" as link
 	eval(argv + 1, c);
 
 	if (c->argc)

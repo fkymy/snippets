@@ -6,8 +6,19 @@
 #include <errno.h>
 #include <string.h>
 
+#define TOKEN_WORD 0
+#define TOKEN_REDIRECTION 1
+#define TOKEN_PIPE 2
+#define TOKEN_AND 3
+#define TOKEN_OR 4
+#define TOKEN_SEPARATOR 5
+#define TOKEN_OTHER -1
+
 #define OP_PIPE 2
-#define OP_SEQUENTIAL 3
+#define OP_AND 3
+#define OP_OR 4
+#define OP_SEPARATOR 5
+#define OP_OTHER -1
 
 extern char **environ;
 
@@ -32,7 +43,7 @@ struct command
 	struct command *next;
 	int argc;
 	char **argv;
-	int ispipe;
+	int op;
 	pid_t pid;
 };
 
@@ -46,7 +57,7 @@ command *command_alloc()
 	c->next = NULL;
 	c->argc = 0;
 	c->argv = NULL;
-	c->ispipe = 0;
+	c->op = 0;
 	c->pid = -1;
 	return c;
 }
@@ -121,15 +132,17 @@ pid_t start_command(char *argv[], int ispipe, int haspipe, int lastpipe[2])
 
 command *do_pipeline(command *c)
 {
+	int ispipe = 0;
 	int haspipe = 0;
 	int lastpipe[2] = { -1, -1 };
 
 	while (c)
 	{
-		c->pid = start_command(c->argv, c->ispipe, haspipe, lastpipe);
+		ispipe = (c->op == '|');
+		c->pid = start_command(c->argv, ispipe, haspipe, lastpipe);
 		if (c->pid == -1)
 			break ;
-		haspipe = c->ispipe;
+		haspipe = ispipe;
 		if (haspipe && c->next)
 			c = c->next;
 		else if (haspipe && !c->next)
@@ -160,6 +173,33 @@ void run_list(command *c)
 	}
 }
 
+void eval(char *argv[], command *c)
+{
+	command *new;
+
+	for (int i = 0; argv[i]; i++)
+	{
+		if (strcmp(argv[i], "|") == 0 || strcmp(argv[i], ";") == 0)
+		{
+			if (c->op || !c->argc)
+				die("syntax error\n");
+			c->op = argv[i][0];
+		}
+		else
+		{
+			if (c->op)
+			{
+				new = command_alloc();
+				if (!new)
+					die("failed to allocate command");
+				c->next = new;
+				c = new;
+			}
+			command_append_arg(c, argv[i]);
+		}
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	command *c;
@@ -168,9 +208,7 @@ int main(int argc, char *argv[])
 	if (!c)
 		return 1;
 
-	// Parse
-	for (int i = 1; i < argc; i++)
-		command_append_arg(c, argv[i]);
+	eval(argv + 1, c);
 
 	if (c->argc)
 		run_list(c);

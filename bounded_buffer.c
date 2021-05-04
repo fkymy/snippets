@@ -81,7 +81,6 @@ int main()
 	struct bbuffer b = { 0 };
 	pthread_t t1, t2;
 
-	pthread_mutex_init(&write_lock, NULL);
 	b.capacity = BUFFER_SIZE;
 	pthread_mutex_init(&b.lock, NULL);
 	pthread_cond_init(&b.nonfull, NULL);

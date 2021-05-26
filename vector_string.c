@@ -18,7 +18,7 @@ t_vector *vector_initialize(void)
 {
 	t_vector *v;
 
-	if (!(v = malloc(sizeof(v))))
+	if (!(v = malloc(sizeof(t_vector))))
 		return NULL;
 	v->data = NULL;
 	v->size = 0;
@@ -41,7 +41,7 @@ void	vector_append(t_vector *v, int c)
 		v->capacity = new_capacity;
 	}
 	v->data[v->size] = c;
-	++v->size;
+	v->size++;
 }
 
 void	vector_appends(t_vector *v, char *s)
